@@ -889,7 +889,7 @@
 
             deleteLayout() {
                 if (this.layouts.length <= 1) {
-                    alert('Cannot delete the last layout');
+                    this.showToast('Cannot delete the last layout');
                     return;
                 }
 
@@ -1256,7 +1256,7 @@
                         this.showToast('Copied to clipboard!');
                         this.closeModal();
                     }).catch(() => {
-                        alert('Failed to copy. Please select and copy manually.');
+                        this.showToast('Failed to copy. Please select and copy manually.');
                     });
                 };
 
@@ -1285,7 +1285,7 @@
                 try {
                     const layouts = JSON.parse(textarea.value);
                     if (!Array.isArray(layouts)) {
-                        alert('Invalid format: expected an array of layouts');
+                        this.showToast('Invalid format: expected an array of layouts');
                         return;
                     }
 
@@ -1303,9 +1303,9 @@
                     this.updateUI();
                     this.render();
                     this.closeModal();
-                    alert('Layouts imported successfully!');
+                    this.showToast('Layouts imported successfully!');
                 } catch (error) {
-                    alert('Error parsing JSON: ' + error.message);
+                    this.showToast('Error parsing JSON: ' + error.message);
                 }
             }
 
