@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KZones Layout Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: #181825;
+            border-right: 1px solid #313244;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #181825;
+            padding: 16px 24px;
+            border-bottom: 1px solid #313244;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            color: #89b4fa;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        #editor-canvas {
+            border: 2px solid #45475a;
+            background: #11111b;
+            cursor: crosshair;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .section {
+            padding: 20px;
+            border-bottom: 1px solid #313244;
+        }
+
+        .section h2 {
+            font-size: 14px;
+            color: #89b4fa;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .button {
+            background: #89b4fa;
+            color: #1e1e2e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .button:hover {
+            background: #a6d3ff;
+            transform: translateY(-1px);
+        }
+
+        .button.secondary {
+            background: #45475a;
+            color: #cdd6f4;
+        }
+
+        .button.secondary:hover {
+            background: #585b70;
+        }
+
+        .button.danger {
+            background: #f38ba8;
+            color: #1e1e2e;
+        }
+
+        .button.danger:hover {
+            background: #f5a3b8;
+        }
+
+        .button.success {
+            background: #a6e3a1;
+            color: #1e1e2e;
+        }
+
+        .button.success:hover {
+            background: #b8ebb3;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #a6adc8;
+            margin-bottom: 4px;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            background: #313244;
+            border: 1px solid #45475a;
+            color: #cdd6f4;
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #89b4fa;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .layout-list {
+            list-style: none;
+            margin-bottom: 12px;
+        }
+
+        .layout-item {
+            padding: 10px;
+            background: #313244;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s, opacity 0.2s;
+        }
+
+        .layout-item:hover {
+            background: #45475a;
+        }
+
+        .layout-item.active {
+            background: #89b4fa;
+            color: #1e1e2e;
+            font-weight: 500;
+        }
+
+        .layout-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .layout-item.drag-over {
+            border-top: 2px solid #89b4fa;
+            padding-top: 8px;
+        }
+
+        .layout-item-name {
+            flex: 1;
+        }
+
+        .layout-item-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .icon-button {
+            background: transparent;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 16px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .icon-button:hover {
+            opacity: 1;
+        }
+
+        .zone-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .zone-item {
+            padding: 8px;
+            background: #313244;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .zone-item:hover {
+            background: #45475a;
+        }
+
+        .zone-item.selected {
+            background: #89b4fa;
+            color: #1e1e2e;
+        }
+
+        .zone-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .help-text {
+            font-size: 11px;
+            color: #6c7086;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        .stats {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #a6adc8;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .checkbox-group label {
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c7086;
+            font-size: 13px;
+            padding: 20px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #1e1e2e;
+            border: 1px solid #45475a;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #313244;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            color: #89b4fa;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #a6adc8;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #313244;
+            color: #cdd6f4;
+        }
+
+        .modal-body {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .modal-body textarea {
+            width: 100%;
+            min-height: 300px;
+            background: #11111b;
+            border: 1px solid #45475a;
+            color: #cdd6f4;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .modal-body textarea:focus {
+            outline: none;
+            border-color: #89b4fa;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #313244;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #a6e3a1;
+            color: #1e1e2e;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="section">
+            <h2>Layouts</h2>
+            <ul class="layout-list" id="layout-list"></ul>
+            <div class="controls">
+                <button class="button success" onclick="app.addLayout()">+ New</button>
+                <button class="button" onclick="app.duplicateLayout()">Duplicate</button>
+            </div>
+            <div class="controls">
+                <button class="button danger" onclick="app.deleteLayout()" id="delete-layout-btn" style="width: 100%;">Delete</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Current Layout</h2>
+            <div class="input-group">
+                <label>Layout Name</label>
+                <input type="text" id="layout-name" placeholder="Layout Name" onchange="app.updateLayoutName()">
+            </div>
+            <div class="input-group">
+                <label>Padding (px)</label>
+                <input type="number" id="layout-padding" min="0" value="0" onchange="app.updateLayoutPadding()">
+            </div>
+            <div class="input-group">
+                <label>Grid Size (%)</label>
+                <input type="number" id="grid-size" min="1" max="50" value="10" step="1" onchange="app.updateGridSize()">
+                <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">Snap resolution (1=fine, 10=default, 25=coarse)</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Zones</h2>
+            <ul class="zone-list" id="zone-list"></ul>
+            <p class="help-text">Drag on canvas to create zones. Click to select. Drag zones to move. Drag edges/corners to resize. Zones snap to grid.</p>
+        </div>
+
+        <div class="section" id="zone-editor" style="display: none;">
+            <h2>Edit Zone</h2>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>X (%)</label>
+                    <input type="number" id="zone-x" min="0" max="100" step="0.1" onchange="app.updateSelectedZone()">
+                </div>
+                <div class="input-group">
+                    <label>Y (%)</label>
+                    <input type="number" id="zone-y" min="0" max="100" step="0.1" onchange="app.updateSelectedZone()">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Width (%)</label>
+                    <input type="number" id="zone-width" min="1" max="100" step="0.1" onchange="app.updateSelectedZone()">
+                </div>
+                <div class="input-group">
+                    <label>Height (%)</label>
+                    <input type="number" id="zone-height" min="1" max="100" step="0.1" onchange="app.updateSelectedZone()">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Applications (comma-separated)</label>
+                <input type="text" id="zone-apps" placeholder="firefox, chrome" onchange="app.updateSelectedZone()">
+            </div>
+            <div class="controls">
+                <button class="button" onclick="app.duplicateSelectedZone()">Duplicate</button>
+                <button class="button danger" onclick="app.deleteSelectedZone()">Delete</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Import / Export</h2>
+            <div class="controls">
+                <button class="button secondary" onclick="app.showImportModal()">Import</button>
+                <button class="button" onclick="app.showExportModal()">Export</button>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="show-grid" onchange="app.toggleGrid()" checked>
+                <label for="show-grid">Show Grid</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>KZones Layout Editor</h1>
+            <div class="stats">
+                <span id="zone-count">0 zones</span>
+                <span id="canvas-size">1920×1080</span>
+            </div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="editor-canvas" width="960" height="540"></canvas>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal-overlay" onclick="app.closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal</h3>
+                <button class="modal-close" onclick="app.closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="modal-textarea" spellcheck="false"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="button secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="button" id="modal-action-btn" onclick="app.handleModalAction()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const COLORS = [
+            '#f38ba8', '#fab387', '#f9e2af', '#a6e3a1',
+            '#94e2d5', '#89dceb', '#74c7ec', '#89b4fa',
+            '#cba6f7', '#f5c2e7', '#eba0ac', '#f5e0dc'
+        ];
+
+        class KZonesEditor {
+            constructor() {
+                this.canvas = document.getElementById('editor-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.layouts = [this.createEmptyLayout('Layout 1')];
+                this.currentLayoutIndex = 0;
+                this.selectedZoneIndex = null;
+                this.dragging = false;
+                this.dragStart = null;
+                this.showGrid = true;
+                this.dragMode = null; // 'create', 'move', 'resize'
+                this.resizeHandle = null; // 'n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'
+                this.dragOffset = null;
+
+                this.setupEventListeners();
+                this.loadFromLocalStorage();
+                this.render();
+                this.updateUI();
+            }
+
+            get gridSize() {
+                return this.getCurrentLayout().gridSize || 10;
+            }
+
+            createEmptyLayout(name = 'New Layout') {
+                return {
+                    name: name,
+                    padding: 0,
+                    gridSize: 10,
+                    zones: []
+                };
+            }
+
+            setupEventListeners() {
+                this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+                window.addEventListener('resize', () => this.render());
+            }
+
+            getMousePos(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                return {
+                    x: ((e.clientX - rect.left) / this.canvas.width) * 100,
+                    y: ((e.clientY - rect.top) / this.canvas.height) * 100
+                };
+            }
+
+            snapToGrid(value) {
+                return Math.round(value / this.gridSize) * this.gridSize;
+            }
+
+            getResizeHandle(pos, zone) {
+                const threshold = 3; // percentage threshold for edge detection
+                const left = Math.abs(pos.x - zone.x) < threshold;
+                const right = Math.abs(pos.x - (zone.x + zone.width)) < threshold;
+                const top = Math.abs(pos.y - zone.y) < threshold;
+                const bottom = Math.abs(pos.y - (zone.y + zone.height)) < threshold;
+
+                // Corners
+                if (top && left) return 'nw';
+                if (top && right) return 'ne';
+                if (bottom && left) return 'sw';
+                if (bottom && right) return 'se';
+
+                // Edges
+                if (top) return 'n';
+                if (bottom) return 's';
+                if (left) return 'w';
+                if (right) return 'e';
+
+                return null;
+            }
+
+            updateCursor(pos) {
+                if (this.dragging) return;
+
+                const zoneIndex = this.findZoneAtPosition(pos);
+                if (zoneIndex !== null) {
+                    const zone = this.getCurrentLayout().zones[zoneIndex];
+                    const handle = this.getResizeHandle(pos, zone);
+
+                    const cursorMap = {
+                        'n': 'ns-resize',
+                        's': 'ns-resize',
+                        'e': 'ew-resize',
+                        'w': 'ew-resize',
+                        'ne': 'nesw-resize',
+                        'sw': 'nesw-resize',
+                        'nw': 'nwse-resize',
+                        'se': 'nwse-resize'
+                    };
+
+                    this.canvas.style.cursor = handle ? cursorMap[handle] : 'move';
+                } else {
+                    this.canvas.style.cursor = 'crosshair';
+                }
+            }
+
+            handleMouseDown(e) {
+                const pos = this.getMousePos(e);
+                const clickedZoneIndex = this.findZoneAtPosition(pos);
+
+                if (clickedZoneIndex !== null) {
+                    const zone = this.getCurrentLayout().zones[clickedZoneIndex];
+                    this.selectedZoneIndex = clickedZoneIndex;
+                    const handle = this.getResizeHandle(pos, zone);
+
+                    if (handle) {
+                        // Start resizing
+                        this.dragMode = 'resize';
+                        this.resizeHandle = handle;
+                        this.dragging = true;
+                        this.dragStart = { ...pos };
+                        this.dragOffset = {
+                            x: zone.x,
+                            y: zone.y,
+                            width: zone.width,
+                            height: zone.height
+                        };
+                    } else {
+                        // Start moving
+                        this.dragMode = 'move';
+                        this.dragging = true;
+                        this.dragStart = { ...pos };
+                        this.dragOffset = {
+                            x: pos.x - zone.x,
+                            y: pos.y - zone.y
+                        };
+                    }
+                    this.updateUI();
+                } else {
+                    // Start creating new zone
+                    this.dragMode = 'create';
+                    this.dragging = true;
+                    this.dragStart = { ...pos };
+                    this.selectedZoneIndex = null;
+                    this.updateUI();
+                }
+            }
+
+            handleMouseMove(e) {
+                const pos = this.getMousePos(e);
+
+                if (!this.dragging) {
+                    this.updateCursor(pos);
+                    return;
+                }
+
+                if (this.dragMode === 'create') {
+                    this.render();
+
+                    let x = Math.min(this.dragStart.x, pos.x);
+                    let y = Math.min(this.dragStart.y, pos.y);
+                    let width = Math.abs(pos.x - this.dragStart.x);
+                    let height = Math.abs(pos.y - this.dragStart.y);
+
+                    // Snap to grid
+                    x = this.snapToGrid(x);
+                    y = this.snapToGrid(y);
+                    width = this.snapToGrid(width);
+                    height = this.snapToGrid(height);
+
+                    this.ctx.fillStyle = 'rgba(137, 180, 250, 0.3)';
+                    this.ctx.strokeStyle = '#89b4fa';
+                    this.ctx.lineWidth = 2;
+                    this.drawRect(x, y, width, height, true);
+                } else if (this.dragMode === 'move') {
+                    const zone = this.getCurrentLayout().zones[this.selectedZoneIndex];
+                    let newX = pos.x - this.dragOffset.x;
+                    let newY = pos.y - this.dragOffset.y;
+
+                    // Snap to grid
+                    newX = this.snapToGrid(newX);
+                    newY = this.snapToGrid(newY);
+
+                    // Constrain to canvas
+                    newX = Math.max(0, Math.min(100 - zone.width, newX));
+                    newY = Math.max(0, Math.min(100 - zone.height, newY));
+
+                    zone.x = newX;
+                    zone.y = newY;
+
+                    this.render();
+                } else if (this.dragMode === 'resize') {
+                    const zone = this.getCurrentLayout().zones[this.selectedZoneIndex];
+                    const dx = pos.x - this.dragStart.x;
+                    const dy = pos.y - this.dragStart.y;
+
+                    let newX = this.dragOffset.x;
+                    let newY = this.dragOffset.y;
+                    let newWidth = this.dragOffset.width;
+                    let newHeight = this.dragOffset.height;
+
+                    // Apply resize based on handle
+                    if (this.resizeHandle.includes('n')) {
+                        newY = this.dragOffset.y + dy;
+                        newHeight = this.dragOffset.height - dy;
+                    }
+                    if (this.resizeHandle.includes('s')) {
+                        newHeight = this.dragOffset.height + dy;
+                    }
+                    if (this.resizeHandle.includes('w')) {
+                        newX = this.dragOffset.x + dx;
+                        newWidth = this.dragOffset.width - dx;
+                    }
+                    if (this.resizeHandle.includes('e')) {
+                        newWidth = this.dragOffset.width + dx;
+                    }
+
+                    // Snap to grid
+                    newX = this.snapToGrid(newX);
+                    newY = this.snapToGrid(newY);
+                    newWidth = this.snapToGrid(newWidth);
+                    newHeight = this.snapToGrid(newHeight);
+
+                    // Minimum size
+                    newWidth = Math.max(this.gridSize, newWidth);
+                    newHeight = Math.max(this.gridSize, newHeight);
+
+                    // Constrain to canvas
+                    newX = Math.max(0, Math.min(100 - newWidth, newX));
+                    newY = Math.max(0, Math.min(100 - newHeight, newY));
+
+                    zone.x = newX;
+                    zone.y = newY;
+                    zone.width = newWidth;
+                    zone.height = newHeight;
+
+                    this.render();
+                }
+            }
+
+            handleMouseUp(e) {
+                if (this.dragging && this.dragMode === 'create' && this.dragStart) {
+                    const pos = this.getMousePos(e);
+                    let x = Math.min(this.dragStart.x, pos.x);
+                    let y = Math.min(this.dragStart.y, pos.y);
+                    let width = Math.abs(pos.x - this.dragStart.x);
+                    let height = Math.abs(pos.y - this.dragStart.y);
+
+                    // Snap to grid
+                    x = this.snapToGrid(x);
+                    y = this.snapToGrid(y);
+                    width = this.snapToGrid(width);
+                    height = this.snapToGrid(height);
+
+                    if (width >= this.gridSize && height >= this.gridSize) {
+                        this.addZone({ x, y, width, height });
+                    }
+                } else if (this.dragMode === 'move' || this.dragMode === 'resize') {
+                    this.saveToLocalStorage();
+                    this.updateUI();
+                }
+
+                this.dragging = false;
+                this.dragStart = null;
+                this.dragMode = null;
+                this.resizeHandle = null;
+                this.dragOffset = null;
+                this.render();
+            }
+
+            findZoneAtPosition(pos) {
+                const zones = this.getCurrentLayout().zones;
+                for (let i = zones.length - 1; i >= 0; i--) {
+                    const zone = zones[i];
+                    if (pos.x >= zone.x && pos.x <= zone.x + zone.width &&
+                        pos.y >= zone.y && pos.y <= zone.y + zone.height) {
+                        return i;
+                    }
+                }
+                return null;
+            }
+
+            addZone(zone) {
+                this.getCurrentLayout().zones.push(zone);
+                this.saveToLocalStorage();
+            }
+
+            deleteZone(index) {
+                this.getCurrentLayout().zones.splice(index, 1);
+                this.selectedZoneIndex = null;
+                this.saveToLocalStorage();
+                this.updateUI();
+                this.render();
+            }
+
+            getCurrentLayout() {
+                return this.layouts[this.currentLayoutIndex];
+            }
+
+            addLayout() {
+                const name = `Layout ${this.layouts.length + 1}`;
+                this.layouts.push(this.createEmptyLayout(name));
+                this.currentLayoutIndex = this.layouts.length - 1;
+                this.selectedZoneIndex = null;
+                this.saveToLocalStorage();
+                this.updateUI();
+                this.render();
+            }
+
+            duplicateLayout() {
+                const currentLayout = this.getCurrentLayout();
+
+                // Deep clone the current layout
+                const duplicatedLayout = {
+                    name: currentLayout.name + ' Copy',
+                    padding: currentLayout.padding,
+                    gridSize: currentLayout.gridSize,
+                    zones: currentLayout.zones.map(zone => {
+                        const newZone = {
+                            x: zone.x,
+                            y: zone.y,
+                            width: zone.width,
+                            height: zone.height
+                        };
+                        if (zone.applications) {
+                            newZone.applications = [...zone.applications];
+                        }
+                        return newZone;
+                    })
+                };
+
+                this.layouts.push(duplicatedLayout);
+                this.currentLayoutIndex = this.layouts.length - 1;
+                this.selectedZoneIndex = null;
+                this.saveToLocalStorage();
+                this.updateUI();
+                this.render();
+            }
+
+            deleteLayout() {
+                if (this.layouts.length <= 1) {
+                    alert('Cannot delete the last layout');
+                    return;
+                }
+
+                if (confirm(`Delete layout "${this.getCurrentLayout().name}"?`)) {
+                    this.layouts.splice(this.currentLayoutIndex, 1);
+                    this.currentLayoutIndex = Math.max(0, this.currentLayoutIndex - 1);
+                    this.selectedZoneIndex = null;
+                    this.saveToLocalStorage();
+                    this.updateUI();
+                    this.render();
+                }
+            }
+
+            selectLayout(index) {
+                this.currentLayoutIndex = index;
+                this.selectedZoneIndex = null;
+                this.updateUI();
+                this.render();
+            }
+
+            handleLayoutDragStart(e, index) {
+                this.draggedLayoutIndex = index;
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', e.target.innerHTML);
+            }
+
+            handleLayoutDragEnd(e) {
+                e.target.classList.remove('dragging');
+                // Remove all drag-over classes
+                document.querySelectorAll('.layout-item').forEach(item => {
+                    item.classList.remove('drag-over');
+                });
+            }
+
+            handleLayoutDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
+
+                // Add visual feedback
+                const target = e.target.closest('.layout-item');
+                if (target && !target.classList.contains('dragging')) {
+                    // Remove drag-over from all items
+                    document.querySelectorAll('.layout-item').forEach(item => {
+                        item.classList.remove('drag-over');
+                    });
+                    // Add to current target
+                    target.classList.add('drag-over');
+                }
+
+                return false;
+            }
+
+            handleLayoutDrop(e, dropIndex) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                e.preventDefault();
+
+                const dragIndex = this.draggedLayoutIndex;
+
+                if (dragIndex !== dropIndex && dragIndex !== undefined) {
+                    // Remove dragged item
+                    const draggedLayout = this.layouts[dragIndex];
+                    this.layouts.splice(dragIndex, 1);
+
+                    // Insert at new position
+                    const newIndex = dragIndex < dropIndex ? dropIndex - 1 : dropIndex;
+                    this.layouts.splice(newIndex, 0, draggedLayout);
+
+                    // Update current layout index if needed
+                    if (this.currentLayoutIndex === dragIndex) {
+                        this.currentLayoutIndex = newIndex;
+                    } else if (dragIndex < this.currentLayoutIndex && newIndex >= this.currentLayoutIndex) {
+                        this.currentLayoutIndex--;
+                    } else if (dragIndex > this.currentLayoutIndex && newIndex <= this.currentLayoutIndex) {
+                        this.currentLayoutIndex++;
+                    }
+
+                    this.saveToLocalStorage();
+                    this.updateUI();
+                }
+
+                return false;
+            }
+
+            handleLayoutDragLeave(e) {
+                e.target.classList.remove('drag-over');
+            }
+
+            updateLayoutName() {
+                const name = document.getElementById('layout-name').value;
+                this.getCurrentLayout().name = name || 'Unnamed Layout';
+                this.saveToLocalStorage();
+                this.updateUI();
+            }
+
+            updateLayoutPadding() {
+                const padding = parseInt(document.getElementById('layout-padding').value) || 0;
+                this.getCurrentLayout().padding = padding;
+                this.saveToLocalStorage();
+            }
+
+            updateGridSize() {
+                const gridSize = parseInt(document.getElementById('grid-size').value) || 10;
+                this.getCurrentLayout().gridSize = Math.max(1, Math.min(50, gridSize));
+                this.saveToLocalStorage();
+                this.render();
+            }
+
+            updateSelectedZone() {
+                if (this.selectedZoneIndex === null) return;
+
+                const zone = this.getCurrentLayout().zones[this.selectedZoneIndex];
+                zone.x = parseFloat(document.getElementById('zone-x').value) || 0;
+                zone.y = parseFloat(document.getElementById('zone-y').value) || 0;
+                zone.width = parseFloat(document.getElementById('zone-width').value) || 1;
+                zone.height = parseFloat(document.getElementById('zone-height').value) || 1;
+
+                const apps = document.getElementById('zone-apps').value.trim();
+                if (apps) {
+                    zone.applications = apps.split(',').map(s => s.trim()).filter(s => s);
+                } else {
+                    delete zone.applications;
+                }
+
+                this.saveToLocalStorage();
+                this.render();
+                this.updateUI();
+            }
+
+            duplicateSelectedZone() {
+                if (this.selectedZoneIndex === null) return;
+
+                const zone = this.getCurrentLayout().zones[this.selectedZoneIndex];
+
+                // Create a copy with offset (snap to grid)
+                let offsetX = zone.x + this.gridSize;
+                let offsetY = zone.y + this.gridSize;
+
+                // Wrap around if it goes off canvas
+                if (offsetX + zone.width > 100) {
+                    offsetX = this.snapToGrid(Math.max(0, 100 - zone.width));
+                }
+                if (offsetY + zone.height > 100) {
+                    offsetY = this.snapToGrid(Math.max(0, 100 - zone.height));
+                }
+
+                const duplicatedZone = {
+                    x: offsetX,
+                    y: offsetY,
+                    width: zone.width,
+                    height: zone.height
+                };
+
+                // Copy applications if they exist
+                if (zone.applications) {
+                    duplicatedZone.applications = [...zone.applications];
+                }
+
+                this.getCurrentLayout().zones.push(duplicatedZone);
+                this.selectedZoneIndex = this.getCurrentLayout().zones.length - 1;
+                this.saveToLocalStorage();
+                this.updateUI();
+                this.render();
+            }
+
+            deleteSelectedZone() {
+                if (this.selectedZoneIndex !== null) {
+                    this.deleteZone(this.selectedZoneIndex);
+                }
+            }
+
+            toggleGrid() {
+                this.showGrid = document.getElementById('show-grid').checked;
+                this.render();
+            }
+
+            drawRect(x, y, width, height, stroke = false) {
+                const px = (x / 100) * this.canvas.width;
+                const py = (y / 100) * this.canvas.height;
+                const pw = (width / 100) * this.canvas.width;
+                const ph = (height / 100) * this.canvas.height;
+
+                this.ctx.fillRect(px, py, pw, ph);
+                if (stroke) {
+                    this.ctx.strokeRect(px, py, pw, ph);
+                }
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw grid
+                if (this.showGrid) {
+                    this.ctx.strokeStyle = '#313244';
+                    this.ctx.lineWidth = 1;
+                    // Iterate by grid size percentage (0, gridSize, 2*gridSize, ..., 100)
+                    for (let i = 0; i <= 100; i += this.gridSize) {
+                        const x = (i / 100) * this.canvas.width;
+                        const y = (i / 100) * this.canvas.height;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(x, 0);
+                        this.ctx.lineTo(x, this.canvas.height);
+                        this.ctx.stroke();
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(0, y);
+                        this.ctx.lineTo(this.canvas.width, y);
+                        this.ctx.stroke();
+                    }
+                }
+
+                // Draw zones
+                const zones = this.getCurrentLayout().zones;
+                zones.forEach((zone, index) => {
+                    const color = COLORS[index % COLORS.length];
+                    const isSelected = index === this.selectedZoneIndex;
+
+                    this.ctx.fillStyle = isSelected ? color + '88' : color + '44';
+                    this.ctx.strokeStyle = color;
+                    this.ctx.lineWidth = isSelected ? 3 : 2;
+
+                    this.drawRect(zone.x, zone.y, zone.width, zone.height, true);
+
+                    // Draw zone label
+                    const px = (zone.x / 100) * this.canvas.width;
+                    const py = (zone.y / 100) * this.canvas.height;
+                    const pw = (zone.width / 100) * this.canvas.width;
+                    const ph = (zone.height / 100) * this.canvas.height;
+
+                    this.ctx.fillStyle = color;
+                    this.ctx.font = '12px monospace';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(
+                        `${zone.width.toFixed(1)}% × ${zone.height.toFixed(1)}%`,
+                        px + pw / 2,
+                        py + ph / 2
+                    );
+
+                    // Draw resize handles for selected zone
+                    if (isSelected) {
+                        this.ctx.fillStyle = color;
+                        const handleSize = 8;
+                        const handles = [
+                            { x: px, y: py }, // nw
+                            { x: px + pw / 2, y: py }, // n
+                            { x: px + pw, y: py }, // ne
+                            { x: px + pw, y: py + ph / 2 }, // e
+                            { x: px + pw, y: py + ph }, // se
+                            { x: px + pw / 2, y: py + ph }, // s
+                            { x: px, y: py + ph }, // sw
+                            { x: px, y: py + ph / 2 } // w
+                        ];
+
+                        handles.forEach(handle => {
+                            this.ctx.fillRect(
+                                handle.x - handleSize / 2,
+                                handle.y - handleSize / 2,
+                                handleSize,
+                                handleSize
+                            );
+                        });
+                    }
+                });
+            }
+
+            updateUI() {
+                const layout = this.getCurrentLayout();
+
+                // Update layout list
+                const layoutList = document.getElementById('layout-list');
+                layoutList.innerHTML = '';
+                this.layouts.forEach((layout, index) => {
+                    const li = document.createElement('li');
+                    li.className = `layout-item ${index === this.currentLayoutIndex ? 'active' : ''}`;
+                    li.draggable = true;
+                    li.dataset.index = index;
+                    li.innerHTML = `
+                        <span class="layout-item-name">${layout.name}</span>
+                        <span class="layout-item-actions">
+                            <span>${layout.zones.length} zones</span>
+                        </span>
+                    `;
+                    li.onclick = () => this.selectLayout(index);
+
+                    // Drag event handlers
+                    li.addEventListener('dragstart', (e) => this.handleLayoutDragStart(e, index));
+                    li.addEventListener('dragend', (e) => this.handleLayoutDragEnd(e));
+                    li.addEventListener('dragover', (e) => this.handleLayoutDragOver(e));
+                    li.addEventListener('drop', (e) => this.handleLayoutDrop(e, index));
+                    li.addEventListener('dragleave', (e) => this.handleLayoutDragLeave(e));
+
+                    layoutList.appendChild(li);
+                });
+
+                // Update layout inputs
+                document.getElementById('layout-name').value = layout.name;
+                document.getElementById('layout-padding').value = layout.padding;
+                document.getElementById('grid-size').value = layout.gridSize || 10;
+
+                // Update zone list
+                const zoneList = document.getElementById('zone-list');
+                zoneList.innerHTML = '';
+                if (layout.zones.length === 0) {
+                    zoneList.innerHTML = '<li class="empty-state">No zones yet</li>';
+                } else {
+                    layout.zones.forEach((zone, index) => {
+                        const li = document.createElement('li');
+                        li.className = `zone-item ${index === this.selectedZoneIndex ? 'selected' : ''}`;
+                        const color = COLORS[index % COLORS.length];
+                        li.innerHTML = `
+                            <div>
+                                <span class="zone-color" style="background: ${color}"></span>
+                                Zone ${index + 1}: ${zone.x.toFixed(1)},${zone.y.toFixed(1)} ${zone.width.toFixed(1)}×${zone.height.toFixed(1)}
+                            </div>
+                        `;
+                        li.onclick = () => {
+                            this.selectedZoneIndex = index;
+                            this.updateUI();
+                            this.render();
+                        };
+                        zoneList.appendChild(li);
+                    });
+                }
+
+                // Update zone editor
+                const zoneEditor = document.getElementById('zone-editor');
+                if (this.selectedZoneIndex !== null) {
+                    const zone = layout.zones[this.selectedZoneIndex];
+                    zoneEditor.style.display = 'block';
+                    document.getElementById('zone-x').value = zone.x;
+                    document.getElementById('zone-y').value = zone.y;
+                    document.getElementById('zone-width').value = zone.width;
+                    document.getElementById('zone-height').value = zone.height;
+                    document.getElementById('zone-apps').value = zone.applications ? zone.applications.join(', ') : '';
+                } else {
+                    zoneEditor.style.display = 'none';
+                }
+
+                // Update stats
+                document.getElementById('zone-count').textContent = `${layout.zones.length} zone${layout.zones.length !== 1 ? 's' : ''}`;
+                document.getElementById('canvas-size').textContent = `${this.canvas.width}×${this.canvas.height}`;
+
+                // Update delete button
+                document.getElementById('delete-layout-btn').disabled = this.layouts.length <= 1;
+            }
+
+            showExportModal() {
+                const json = JSON.stringify(this.layouts, null, 4);
+                const modal = document.getElementById('modal-overlay');
+                const title = document.getElementById('modal-title');
+                const textarea = document.getElementById('modal-textarea');
+                const actionBtn = document.getElementById('modal-action-btn');
+
+                title.textContent = 'Export Layouts';
+                textarea.value = json;
+                actionBtn.textContent = 'Copy to Clipboard';
+                actionBtn.onclick = () => {
+                    textarea.select();
+                    navigator.clipboard.writeText(json).then(() => {
+                        this.showToast('Copied to clipboard!');
+                        this.closeModal();
+                    }).catch(() => {
+                        alert('Failed to copy. Please select and copy manually.');
+                    });
+                };
+
+                modal.classList.add('active');
+                setTimeout(() => textarea.select(), 100);
+            }
+
+            showImportModal() {
+                const modal = document.getElementById('modal-overlay');
+                const title = document.getElementById('modal-title');
+                const textarea = document.getElementById('modal-textarea');
+                const actionBtn = document.getElementById('modal-action-btn');
+
+                title.textContent = 'Import Layouts';
+                textarea.value = '';
+                textarea.placeholder = 'Paste your KZones JSON layout here...';
+                actionBtn.textContent = 'Import';
+                actionBtn.onclick = () => this.handleImport();
+
+                modal.classList.add('active');
+                setTimeout(() => textarea.focus(), 100);
+            }
+
+            handleImport() {
+                const textarea = document.getElementById('modal-textarea');
+                try {
+                    const layouts = JSON.parse(textarea.value);
+                    if (!Array.isArray(layouts)) {
+                        alert('Invalid format: expected an array of layouts');
+                        return;
+                    }
+
+                    // Migrate layouts without gridSize
+                    layouts.forEach(layout => {
+                        if (!layout.gridSize) {
+                            layout.gridSize = 10;
+                        }
+                    });
+
+                    this.layouts = layouts;
+                    this.currentLayoutIndex = 0;
+                    this.selectedZoneIndex = null;
+                    this.saveToLocalStorage();
+                    this.updateUI();
+                    this.render();
+                    this.closeModal();
+                    alert('Layouts imported successfully!');
+                } catch (error) {
+                    alert('Error parsing JSON: ' + error.message);
+                }
+            }
+
+            closeModal(event) {
+                // If clicking overlay background, close
+                if (event && event.target.id !== 'modal-overlay') return;
+                const modal = document.getElementById('modal-overlay');
+                modal.classList.remove('active');
+            }
+
+            handleModalAction() {
+                // This will be set dynamically by showExportModal or showImportModal
+            }
+
+            showToast(message, duration = 3000) {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.classList.add('show');
+
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, duration);
+            }
+
+            saveToLocalStorage() {
+                try {
+                    localStorage.setItem('kzones-layouts', JSON.stringify(this.layouts));
+                } catch (e) {
+                    console.error('Failed to save to localStorage:', e);
+                }
+            }
+
+            loadFromLocalStorage() {
+                try {
+                    const saved = localStorage.getItem('kzones-layouts');
+                    if (saved) {
+                        this.layouts = JSON.parse(saved);
+                        // Migrate old layouts without gridSize
+                        this.layouts.forEach(layout => {
+                            if (!layout.gridSize) {
+                                layout.gridSize = 10;
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to load from localStorage:', e);
+                }
+            }
+        }
+
+        // Initialize app
+        const app = new KZonesEditor();
+    </script>
+</body>
+</html>
