@@ -2,14 +2,15 @@
 
 A visual editor for creating and managing KZones window layouts.
 
+**[Launch Web App](https://rdbell.github.io/kzones-editor/)**
+
 ## Usage
 
-1. Open `kzones-editor.html` in your web browser
-2. Draw zones by clicking and dragging on the canvas
-3. Click zones to select and edit them
-4. Drag zone edges or corners to resize
-5. Create multiple layouts using the sidebar
-6. Export your layouts as JSON when finished
+1. Draw zones by clicking and dragging on the canvas
+2. Click zones to select and edit them
+3. Drag zone edges or corners to resize
+4. Create multiple layouts using the sidebar
+5. Export your layouts as JSON when finished
 
 ## Features
 
