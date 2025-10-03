@@ -4,6 +4,8 @@ A visual editor for creating and managing KZones window layouts.
 
 **[Launch Web App](https://rdbell.github.io/kzones-editor/)**
 
+![KZones Layout Editor Screenshot](screenshot.png)
+
 ## Usage
 
 1. Draw zones by clicking and dragging on the canvas
