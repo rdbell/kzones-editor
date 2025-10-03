@@ -1,6 +1,6 @@
 # KZones Layout Editor
 
-A visual editor for creating and managing KZones window layouts.
+A visual editor for creating and managing [KZones](https://github.com/gerritdevriese/kzones) window layouts.
 
 **[Launch Web App](https://rdbell.github.io/kzones-editor/)**
 
